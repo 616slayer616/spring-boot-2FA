@@ -1,0 +1,149 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+    id 'jacoco'
+    id 'org.sonarqube' version '3.3'
+    id 'org.springframework.boot' version '2.4.3'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+}
+
+group 'org.padler'
+version '1.0.0'
+
+sourceCompatibility = 1.8
+
+test {
+    useJUnitPlatform()
+}
+
+test.finalizedBy jacocoTestReport
+
+jacoco {
+    toolVersion = "0.8.7"
+}
+
+jacocoTestReport {
+    reports {
+        xml.required.set(true)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    implementation("org.springframework.boot:spring-boot-starter")
+    // https://mvnrepository.com/artifact/commons-codec/commons-codec
+    implementation("commons-codec:commons-codec:1.15")
+    // https://mvnrepository.com/artifact/de.taimos/totp
+    implementation("de.taimos:totp:1.0")
+    // https://mvnrepository.com/artifact/com.google.zxing/core
+    implementation("com.google.zxing:javase:3.4.1")
+
+    // Test
+    testImplementation('org.springframework.boot:spring-boot-starter-test')
+
+    testImplementation('org.junit.jupiter:junit-jupiter-engine')
+    testImplementation('org.mockito:mockito-junit-jupiter')
+}
+
+sonarqube {
+    properties {
+        property "sonar.host.url", "https://sonarcloud.io"
+        property "sonar.organization", "616slayer616-github"
+        property "sonar.projectName", "spring-boot-2fa"
+        property "sonar.projectKey", "616slayer616_spring-boot-2fa"
+        property "sonar.coverage.jacoco.xmlReportPaths", "$buildDir/reports/jacoco/test/jacocoTestReport.xml"
+    }
+}
+
+bootJar {
+    enabled = false
+}
+
+jar {
+    enabled = true
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = 'sources'
+}
+
+task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier = 'javadoc'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'spring-boot-2fa'
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+            pom {
+                name = 'spring-boot-2fa'
+                description = 'Thymeleaf DB admininstration'
+                url = 'http://github.com/616slayer616/spring-boot-2fa'
+                licenses {
+                    license {
+                        name = 'License'
+                        url = 'https://github.com/616slayer616/spring-boot-2fa/blob/master/LICENSE'
+                    }
+                }
+                developers {
+                    developer {
+                        id = '616slayer616'
+                        name = 'Patrick Adler'
+                        email = 'patrick@padler.org'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/616slayer616/spring-boot-2fa.git'
+                    developerConnection = 'scm:git:ssh://github.com/616slayer616/spring-boot-2fa.git'
+                    url = 'http://github.com/616slayer616/spring-boot-2fa'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "OSSRH"
+            url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            credentials {
+                username = System.getenv("MAVEN_USERNAME")
+                password = System.getenv("MAVEN_PASSWORD")
+            }
+        }
+        maven {
+            name = "GitHubPackages"
+            url = "https://maven.pkg.github.com/616slayer616/spring-boot-2fa"
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+javadoc {
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+}
